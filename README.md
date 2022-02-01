@@ -1,0 +1,9 @@
+# TRANSSES_mets_simulation
+
+This repository contains all of the files needed to perform the analysis presented in "Educational inequalities in metabolic syndrome prevalence, timing, and duration among adults over the life course: a microsimulation analysis based on the Lifelines Cohort Study" by Liza A. Hoveling, Alexander Lepe, Michaël Boissonneault, Joop A. A. de Beer, Nynke Smidt, Marlou L. A. de Kroon, and Aart C. Liefbroer. Liza and Alex contributed equally to this work. 
+
+## Description of files
+
+All of the transition rates, which were estimated using data from the Lifelines Cohort Study, are found within the data_files folder. The rates_mets.xlsx file provides details about the specific models used to estimate the transition rates. This file also contains the estimated prevalence of metabolic syndrome (MetS) at age 18, which is used as the initial prevalence of MetS in the simulations. The estimates from these files were extracted into the corresponding csv files. Files containing the prefix "cf_" are used in the counterfactual analyses. The Stata do-file contains all of the necessary code to generate the transition rates using data from the Lifelines Cohort Study. Data from Lifelines is available upon request (www.lifelines.nl). 
+
+The code to conduct the microsimulation analysis are found within three separate R files: parameterization_mets.R, simulation_mets.R, and mc_variance_mets.R. The parameterization_mets.R file contains the code used to parameterize the transition rates generated in Stata to account for continuous age, which is required in the simulation. The simulation_mets.R file contains the code used to create the synthetic cohort, run the simulations, and analyze the results from the simulation. Lastly, mc_variance_mets.R contains the code used to assess whether the sample size sufficiently eliminated the uncertainty associated with the Monte Carlo component of the microsimulation models. 

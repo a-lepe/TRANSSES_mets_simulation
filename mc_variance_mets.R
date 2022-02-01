@@ -15,17 +15,18 @@ min_N <- 100000
 max_N <- 500000 
 step_size <- 100000
 n_iter <- length(seq(from = min_N, to = max_N, by = step_size))
-n_cores <- 90
+n_cores <- 24
 
-# defining age for use in parameterization 
+# creating age variable values equal midpoint of our age groups
+# for use in the parameterization
 age <- c(19.5,seq(23.5,63.5,5))
 
 
 # MetS parameterization ---------------------------------------------------
 
 # loading observed data
-df_mets <- read.csv(paste0(file_path, "rates_mets.csv"))
-df_mets <- df_mets[1:10,]/100
+df_mets <- read.csv(paste0(file_path, "rates_mets.csv")) %>%
+  mutate(across(everything(), ~./100))
 
 # estimating parameters to predict incidence rates 
 model_mets <- list()
@@ -257,10 +258,10 @@ for (N in seq(from = min_N, to = max_N, by = step_size)) {
     
     # converting output to spell format 
     # first duplicating data
-    msm_mets <- simpop_mets
+    msm_mets <- simpop_mets %>% arrange(ID, transitionTime)
     
     # creating index to identify each transition
-    msm_mets <- msm_mets %>% group_by(ID) %>% mutate(index=1:n())
+    msm_mets <- msm_mets %>% group_by(ID) %>% mutate(index=1:n()) %>% ungroup()
     
     # only selecting first row per individual and adding labels for 
     # gender, education and health status at start of model
@@ -304,18 +305,22 @@ for (N in seq(from = min_N, to = max_N, by = step_size)) {
       mutate(length = agestop - agestart)
     
     # assign index 
-    spell_mets <- spell_mets %>% group_by(ID) %>% mutate(index=1:n())
+    spell_mets <- spell_mets %>% group_by(ID) %>% mutate(index=1:n()) %>% ungroup()
     
     # estimating the required metrics 
     mc_prev_mets[mc_rows,col_num] <- spell_mets %>%
       mutate(health_num = if_else(health == "MS", 1, 0)) %>%
+      # arranges so that instances of MetS appear first
       arrange(health) %>%
+      # only keeps first row per individual
       distinct(ID, .keep_all = T) %>%
       group_by(education, gender) %>%
       summarise(prev = mean(health_num) * 100, .groups = "drop")  %>%
       select(prev)
     
     mc_age_mets[mc_rows,col_num] <- spell_mets %>%
+      # if no MetS when entering cohort then first instance
+      # would be recorded at index 2
       filter(index == 2, health == "MS") %>%
       group_by(education, gender) %>%
       summarise(age_onset = mean(agestart), .groups = "drop") %>%
@@ -340,11 +345,13 @@ save(mc_time_mets, file = paste0(mc_path, "mc_time_mets.rda"))
 
 # Analyzing the monte carlo variance --------------------------------------
 
-# MetS
+# loading the files
 load(paste0(mc_path, "mc_prev_mets.rda"))
 load(paste0(mc_path, "mc_age_mets.rda"))
 load(paste0(mc_path, "mc_time_mets.rda"))
 
+# calculating the standard deviation of the population-level parameters
+# across the various sample sizes, and then plotting this
 mc_prev_mets %>%
   group_by(education, gender) %>%
   summarise(across(1:n_iter, ~sd(.)), .groups = "drop") %>%
